@@ -4,25 +4,35 @@ import Mathlib
 namespace DGAlgorithms
 
 namespace SimpleGraph
-variable (G : SimpleGraph V) [Fintype V] [DecidableEq V]
+variable {V} (G : SimpleGraph V) [Fintype V] [DecidableEq V]
 
 abbrev E (G : SimpleGraph V) := G.edgeSet
 
+/-- `Prop`: is `E'` a subset of the `SimpleGraph`'s `edgeSet`?-/
 def isEdgeSubset (E' : Set (Sym2 V)) := E' ⊆ E G
 
+/-- `Set V`: the set of all vertices at `radius`-distance from the `center` vertex-/
 def ball (center : V) (radius : ℕ) :=
   {v : V | G.dist center v ≤ radius}
 
+/-- `ℕ`: the supremum of the pairwise distances between vertices.-/
 noncomputable def diameter (G : SimpleGraph V) :=
   sSup {l | ∃ v w : V, G.dist v w = l}
 
+/-- `Prop`: is `I` an independent vertex set of the graph `G`?
+
+Defined as: no two vertices of `I` are adjacent. -/
 noncomputable def isIndepVertexSet (G : SimpleGraph V) (I : Finset V) :=
   ∀ v ∈ I, ∀ w ∈ I, ¬ G.Adj v w
 
+/-- `Prop`: is `I` an independent vertex set of the graph `G`?
+
+Defined as: for any two adjacent vertices, at least one of them is not in `I`.-/
 noncomputable def isIndepVertexSet_edgeDef (G : SimpleGraph V) (I : Finset V) :=
   ∀ v w : V, G.Adj v w → ¬v ∈ I ∨  ¬ w ∈ I
 
 omit [Fintype V] in
+/-- Lemma: the two definitions of "`I` is an independent set" are equivalent.-/
 lemma test_equiv_lemma_ind : ∀ G : SimpleGraph V, ∀ I,
   isIndepVertexSet G I ↔ isIndepVertexSet_edgeDef G I := by
   intro G I
@@ -34,60 +44,92 @@ lemma test_equiv_lemma_ind : ∀ G : SimpleGraph V, ∀ I,
     specialize h v w hadj
     cases h <;> tauto
 
+/-- `Prop`: is `I` a vertex dominating set?
 
+Defined as: every vertex is either in `I` or adjacent to a vertex in `I`.-/
 noncomputable def isDominatingSet (G : SimpleGraph V) (C : Finset V) :=
   ∀ w : V, w ∈ C ∨ ∃ v ∈ C, G.Adj w v
 
+/-- `Prop`: is `C` a vertex cover?
+
+Defined as: for every pair of adjacent vertices, at least one is in `C`.-/
 noncomputable def isVertexCover (G : SimpleGraph V) (C : Finset V) :=
   ∀ v w : V, G.Adj v w → v ∈ C ∨ w ∈ C
 
+/-- `Prop`: is `E'` an edge cover?
+
+Defined as: a subset of edges such that every vertex is adjacent to at least one edge in `E'`.-/
 noncomputable def isEdgeCover (G : SimpleGraph V) (E' : Set (Sym2 V)) :=
   E' ⊆ E G ∧ ∀ v : V, ∃ e ∈ E', v ∈ e
 
+/-- `Prop`: is `E'` an edge dominating set?
+
+Defined as: a subset of edges such that every edge not in `E'` shares a vertex with an
+edge in `E'`.-/
 noncomputable def isEdgeDomSet (G : SimpleGraph V) (E' : Set (Sym2 V)) :=
   E' ⊆ E G ∧ ∀ e ∈ E G, e ∉ E' → ∃ e' ∈ E', ∃ v : V, v ∈ e' ∧ v ∈ e
 
+/-- `Prop`: is `X` the minimal vertex set (by inclusion) with the property `Pred`?
+
+Defined as: no subset of `X` satisfies `Pred`.-/
 noncomputable def isMinimalSet (Pred : Finset V → Prop)
   (X : Finset V) :=
     Pred X ∧ ∀ X' : Finset V, X' ⊂ X → ¬ Pred X'
 
+/-- `Prop`: is `X` the maximal vertex set (by inclusion) with the property `Pred`?
 
+Defined as: no superset of `X` satisfies `Pred`.-/
 noncomputable def isMaximalSet (Pred : Finset V → Prop)
   (X : Finset V) :=
     Pred X ∧ ∀ X' : Finset V, X ⊂ X' → ¬ Pred X'
 
+/-- `Prop`: is `X` the maximal vertex set (by insertion) with the property `Pred`?
+
+Defined as: there is no `x ∉ X` such that `X ∪ {x}` satisfies `Pred`.-/
 noncomputable def isMaximalSet_noInsert (Pred : Finset V → Prop)
   (X : Finset V) :=
     Pred X ∧ ∀ v : V, v ∉ X → ¬ Pred (Insert.insert v X)
 
+/-- `Prop`: is `X` the minimum vertex set (by cardinality) with the property `Pred`?
 
+Defined as: there is no `X'` which satisfies `Pred` such that `|X'|<|X|`.-/
 noncomputable def isMinimumSet (Pred : Finset V → Prop)
   (X : Finset V) :=
     Pred X ∧ ∀ X' : Finset V, X'.card < X.card → ¬ Pred X'
 
+/-- `Prop`: is `X` the maximum vertex set (by cardinality) with the property `Pred`?
+
+Defined as: there is no `X'` which satisfies `Pred` such that `|X'|>|X|`.-/
 noncomputable def isMaximumSet (Pred : Finset V → Prop)
   (X : Finset V) :=
     Pred X ∧ ∀ X' : Finset V, X'.card > X.card → ¬ Pred X'
 
+/-- `Prop`: is `I` a maximal independent set?-/
 noncomputable def isMaximalIndSet (G : SimpleGraph V) (I : Finset V) :=
   isMaximalSet (isIndepVertexSet G) I
 
+/-- `Prop`: is `C` a minimal vertex cover?-/
 noncomputable def isMinimalVC (G : SimpleGraph V) (C : Finset V) :=
   isMinimalSet (isVertexCover G) C
 
+/-- `Prop`: is `C` a minimal dominating set?-/
 noncomputable def isMinimalDomSet (G : SimpleGraph V) (C : Finset V) :=
   isMinimalSet (isDominatingSet G) C
 
+/-- `Prop`: is `I` a maximum independent set?-/
 noncomputable def isMaximumIndSet (G : SimpleGraph V) (I : Finset V) :=
   isMaximumSet (isIndepVertexSet G) I
 
+/--`Prop`: is `C` a minimum vertex cover?-/
 noncomputable def isMinimumVC (G : SimpleGraph V) (C : Finset V) :=
   isMinimumSet (isVertexCover G) C
 
+/-- `Prop`: is `C` a minimum dominating set?-/
 noncomputable def isMinimumDomSet (G : SimpleGraph V) (C : Finset V) :=
   isMinimumSet (isDominatingSet G) C
 
 omit [Fintype V] in
+/-- Lemma: being maximal by inclusion implies being maximal by insertion.-/
 lemma isMaximalImpliesNoIns (Pred : Finset V → Prop) (X : Finset V) :
   isMaximalSet Pred X → isMaximalSet_noInsert Pred X := by
   simp [isMaximalSet, isMaximalSet_noInsert]
@@ -102,6 +144,7 @@ lemma isMaximalImpliesNoIns (Pred : Finset V → Prop) (X : Finset V) :
     exact h_isMaximal
 
 omit [Fintype V] [DecidableEq V] in
+/-- Lemma: being a maximum set implies being a maximal set (by inclusion).-/
 lemma maximum_implies_maximal (Pred : Finset V → Prop) (X : Finset V) :
   isMaximumSet Pred X → isMaximalSet Pred X := by
   intro h_maximum
@@ -115,6 +158,7 @@ lemma maximum_implies_maximal (Pred : Finset V → Prop) (X : Finset V) :
       exact hmax Y_neq
 
 omit [Fintype V] [DecidableEq V] in
+/-- Lemma: being a minimum set implies being a minimal set (by inclusion).-/
 lemma minimum_implies_minimal (Pred : Finset V → Prop) (X : Finset V) :
   isMinimumSet Pred X → isMinimalSet Pred X := by
   intro h_minimum
@@ -127,8 +171,10 @@ lemma minimum_implies_minimal (Pred : Finset V → Prop) (X : Finset V) :
       specialize hmin Y this
       exact hmin
 
+/-- Theorem: `C` is a vertex cover if and only if the complement `V\C` is an independent
+  vertex set.
 
--- Exercise 2.1 a)
+  Reference: Exercise 2.1 a)-/
 theorem VC_complement_indep (G : SimpleGraph V)
   (C : Finset V) : isVertexCover G C ↔ isIndepVertexSet G (Cᶜ) := by
   constructor <;> simp_all [isVertexCover, isIndepVertexSet]
@@ -140,6 +186,7 @@ theorem VC_complement_indep (G : SimpleGraph V)
     by_contra h_C
     tauto
 
+/-- Lemma: applying the complement reverses the subset relation.-/
 lemma Finset_compl_sub [Fintype α] [DecidableEq α] (Y C : Finset α)
   : Cᶜ ⊆ Y → Yᶜ ⊆ C := by
   simp [Finset.subset_iff]
@@ -148,6 +195,7 @@ lemma Finset_compl_sub [Fintype α] [DecidableEq α] (Y C : Finset α)
   specialize h h'
   exact x_notin_Y h
 
+/-- Lemma: applying the complement reverses the strict subset relation.-/
 lemma Finset_compl_ssub [Fintype α] [DecidableEq α] (Y C : Finset α)
   : Cᶜ ⊂ Y → Yᶜ ⊂ C := by
   intro h
@@ -165,15 +213,14 @@ lemma Finset_compl_ssub [Fintype α] [DecidableEq α] (Y C : Finset α)
         exact h'
       exact right h''
 
-
-
-
+/-- Lemma: applying the complement reverses the strict subset relation.-/
 lemma Finset_compl_compl_sub [Fintype α] [DecidableEq α] (Y C : Finset α) : Y ⊂ C → Cᶜ ⊂ Yᶜ := by
   intro h
   nth_rw 1 [←compl_compl Y] at h
   apply Finset_compl_ssub
   exact h
 
+/-- Lemma: applying the complement reverses the -/
 lemma Finset_compl_card [Fintype α] [DecidableEq α] (Y C : Finset α)
   : Cᶜ.card < Y.card → Yᶜ.card < C.card := by
   intro hcard
