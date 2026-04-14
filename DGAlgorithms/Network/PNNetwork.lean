@@ -448,7 +448,75 @@ def PNNetwork.boxProd (G : PNNetwork V) (G' : PNNetwork V') : PNNetwork (V × V'
 /-- Box product of PNNetworks. -/
 infixl:70 " □ " => PNNetwork.boxProd
 
--- instance  (G : PNNetwork V) (G' : PNNetwork V') [SimplePN G] [SimplePN G'] : SimplePN (G □ G') := sorry
+instance  (G : PNNetwork V) (G' : PNNetwork V') [hg : SimplePN G] [hg': SimplePN G'] : SimplePN (G □ G') := by
+  constructor
+  -- loopless
+  intro (v1,v2) k1 k2 k1valid absurd
+  cases heq1 : unpair (G.deg v1) (G'.deg v2) k1 with
+    | mk a1 b1
+  let ⟨a1valid,b1valid⟩ := unpair_valid k1 k1valid
+  simp [heq1] at a1valid
+  simp [heq1] at b1valid
+  cases heq2 : unpair (G.deg v1) (G'.deg v2) k2 with
+    | mk a2 b2
+  unfold unpair at heq1 heq2
+  unfold PNNetwork.boxProd at k1valid
+  simp [k1valid] at heq1
+  have k2valid : (k2 < (G□G').deg (v1,v2)) := by
+    have rwrt : (k2 = ((v1,v2),k2).2) := rfl
+    have involution : ((G□G').pmap ((v1,v2),k2) = ((v1,v2),k1)) := by
+      rw [← absurd, (G□G').pmap_involutive]
+      exact k1valid
+    rw [rwrt]
+    apply (G□G').is_well_defined ((v1,v2),k2)
+    rw [involution]
+    exact k1valid
+  unfold PNNetwork.boxProd at k2valid
+  simp [k2valid] at heq2
+  simp at k1valid
+  have gdegpos : (0<G.deg v1) := by nlinarith
+  apply hg.loopless v1 a1 a2
+  exact a1valid
+  dsimp [PNNetwork.boxProd, unpair, pair] at absurd
+  simp [k1valid, heq1.left, heq1.right] at absurd
+  dsimp [Port.port, Port.node] at absurd
+  let ⟨⟨abs1,abs2⟩,abs3⟩ := absurd
+  apply Prod.ext
+  exact abs1
+  simp [a1valid, b1valid,abs1] at abs3
+  have hyp : (k2%(G.deg v1)=(G.pmap (v1,a1)).2) := by
+    rw [← abs3,mul_comm,Nat.mul_add_mod (G.deg v1) ((G'.pmap (v2,b1)).2) ((G.pmap (v1,a1)).2)]
+    apply Nat.mod_eq_of_lt
+    let lem := (G.is_well_defined_iff (v1,a1)).mpr
+    dsimp [PNNetwork.PortValid, Port.port, Port.node] at lem
+    simp [abs1] at lem
+    exact lem a1valid
+  simp
+  rw [← hyp]
+  exact heq2.left
+  -- simple
+  intro (v1,v2) k1 k2 k1valid k2valid
+  cases heq1 : unpair (G.deg v1) (G'.deg v2) k1 with
+    | mk a1 b1
+  let ⟨a1valid,b1valid⟩ := unpair_valid k1 k1valid
+  simp [heq1] at a1valid
+  simp [heq1] at b1valid
+  cases heq2 : unpair (G.deg v1) (G'.deg v2) k2 with
+    | mk a2 b2
+  let ⟨a2valid,b2valid⟩ := unpair_valid k2 k2valid
+  simp [heq2] at a2valid
+  simp [heq2] at b2valid
+  dsimp [PNNetwork.boxProd]
+  simp [heq1,heq2,Port.node]
+  intro heqa heqb
+  let a1eqa2 := hg.simple v1 a1 a2 a1valid a2valid heqa
+  let b1eqb2 := hg'.simple v2 b1 b2 b1valid b2valid heqb
+  dsimp [unpair,PNNetwork.boxProd] at *
+  simp [k1valid] at heq1
+  simp [k2valid] at heq2
+  rw [← Nat.div_add_mod k1 (G.deg v1),← Nat.div_add_mod k2 (G.deg v1),heq1.left,heq1.right,heq2.left,heq2.right,a1eqa2,b1eqb2]
+
+
 
 -- lemma box_prod_comm (G : PNNetwork V) (G' : PNNetwork V') [SimplePN G] [SimplePN G'] : (G □ G').to_SimpleGraph = (G.to_SimpleGraph □ G'.to_SimpleGraph) := by
 --   ext v v'
